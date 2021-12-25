@@ -60,6 +60,7 @@ end
 class Game
   attr_reader :random_word
   attr_accessor :display, :incorrect_guesses, :guesses
+
   def initialize
     @guesses = 10
     words_list = File.read('5desk.txt').split(' ')
@@ -68,8 +69,6 @@ class Game
     @display = Array.new(random_word.size, '_')
     @incorrect_guesses = []
   end
-
-
 end
 
 game = Game.new
@@ -93,8 +92,9 @@ while game.display.include?('_') && game.guesses > 0
     game.display.each_with_index do |_placeholder, _display_index|
       if letter.downcase == input
         game.display[index] = input
-      elsif !(game.random_word.include?(input))
+      elsif !game.random_word.include?(input)
         break if game.incorrect_guesses.include?(input)
+
         game.guesses -= 1
         game.incorrect_guesses.push(input)
       end
