@@ -1,3 +1,28 @@
+require 'yaml'
+
+module BasicSerializable
+  # should point to a class; change to a different
+  # class (e.g. MessagePack, JSON, YAML) to get a different
+  # serialization
+  @@serializer = YAML
+
+  def serialize
+    obj = {}
+    instance_variables.map do |var|
+      obj[var] = instance_variable_get(var)
+    end
+
+    @@serializer.dump obj
+  end
+
+  def unserialize(string)
+    obj = @@serializer.load(string)
+    obj.keys.each do |key|
+      instance_variable_set(key, obj[key])
+    end
+  end
+end
+
 class String
   # colorization
   def colorize(color_code)
@@ -58,6 +83,8 @@ class String
 end
 
 class Game
+  include BasicSerializable
+
   attr_reader :random_word
   attr_accessor :display, :incorrect_guesses, :guesses
 
@@ -69,43 +96,108 @@ class Game
     @display = Array.new(random_word.size, '_')
     @incorrect_guesses = []
   end
-end
 
-game = Game.new
-
-while game.display.include?('_') && game.guesses > 0
-  puts '*************************************************************************'
-  puts "Enter #{'"save"'.green} to save the game, enter #{'"load"'.yellow} to load your save file"
-  puts ''
-  puts game.display.join(' ')
-  puts ''
-  puts "Incorrect letters: #{game.incorrect_guesses.join(' ')}"
-  puts ''
-  puts "Remaining guesses: #{game.guesses}"
-  puts ''
-  print 'Enter a letter to make a guess> '
-  input = gets.chomp.downcase
-
-  random_word_split = game.random_word.split('')
-
-  random_word_split.each_with_index do |letter, index|
-    game.display.each_with_index do |_placeholder, _display_index|
-      if letter.downcase == input
-        game.display[index] = input
-      elsif !game.random_word.include?(input)
-        break if game.incorrect_guesses.include?(input)
-
-        game.guesses -= 1
-        game.incorrect_guesses.push(input)
-      end
+  def save_game(save_file)
+    Dir.mkdir('saves') unless Dir.exist?('saves')
+    filename = 'saves/save.txt'
+    File.open(filename, 'w') do |file|
+      file.puts save_file
     end
   end
 end
-puts ''
-puts game.display.join(' ')
-puts ''
-if game.guesses > 0
-  puts "Congrats! You guessed '#{game.random_word}'"
-else
-  puts "You lost. Correct answer was '#{game.random_word}'"
+
+game = Game.new
+puts "Enter '1' to start a new game"
+puts "Enter '2' to load a save file"
+choice = gets.chomp
+if choice == '1'
+  while game.display.include?('_') && game.guesses > 0
+    puts '*************************************************************************'
+    puts "Enter #{'"save"'.green} to save the game"
+    puts ''
+    puts game.display.join(' ')
+    puts ''
+    puts "Incorrect letters: #{game.incorrect_guesses.join(' ')}"
+    puts ''
+    puts "Remaining guesses: #{game.guesses}"
+    puts ''
+    print 'Enter a letter to make a guess> '
+    input = gets.chomp.downcase
+
+    if input == 'save'
+      puts 'Saving...'
+      save = game.serialize
+      game.save_game(save)
+    else
+      random_word_split = game.random_word.split('')
+
+      random_word_split.each_with_index do |letter, index|
+        game.display.each_with_index do |_placeholder, _display_index|
+          if letter.downcase == input
+            game.display[index] = input
+          elsif !game.random_word.include?(input)
+            break if game.incorrect_guesses.include?(input)
+
+            game.guesses -= 1
+            game.incorrect_guesses.push(input)
+          end
+        end
+      end
+
+    end
+  end
+  puts ''
+  puts game.display.join(' ')
+  puts ''
+  if game.guesses > 0
+    puts "Congrats! You guessed '#{game.random_word}'"
+  else
+    puts "You lost. Correct answer was '#{game.random_word}'"
+  end
+elsif choice == '2'
+  puts 'Loading..'
+  game.unserialize(File.read('saves/save.txt'))
+
+  while game.display.include?('_') && game.guesses > 0
+    puts '*************************************************************************'
+    puts "Enter #{'"save"'.green} to save the game"
+    puts ''
+    puts game.display.join(' ')
+    puts ''
+    puts "Incorrect letters: #{game.incorrect_guesses.join(' ')}"
+    puts ''
+    puts "Remaining guesses: #{game.guesses}"
+    puts ''
+    print 'Enter a letter to make a guess> '
+    input = gets.chomp.downcase
+
+    if input == 'save'
+      puts 'Saving...'
+      save = game.serialize
+      game.save_game(save)
+    else
+      random_word_split = game.random_word.split('')
+
+      random_word_split.each_with_index do |letter, index|
+        game.display.each_with_index do |_placeholder, _display_index|
+          if letter.downcase == input
+            game.display[index] = input
+          elsif !game.random_word.include?(input)
+            break if game.incorrect_guesses.include?(input)
+
+            game.guesses -= 1
+            game.incorrect_guesses.push(input)
+          end
+        end
+      end
+    end
+  end
+  puts ''
+  puts game.display.join(' ')
+  puts ''
+  if game.guesses > 0
+    puts "Congrats! You guessed '#{game.random_word}'"
+  else
+    puts "You lost. Correct answer was '#{game.random_word}'"
+  end
 end
