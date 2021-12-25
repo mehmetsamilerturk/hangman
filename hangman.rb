@@ -57,28 +57,38 @@ class String
   end
 end
 
-words_list = File.read('5desk.txt').split(' ')
-words_correct_size = words_list.filter_map {|word| word if word.size.between?(5, 12)}
-random_word = words_correct_size.sample.downcase
+class Game
+  attr_reader :guesses, :random_word
+  def initialize
+    @guesses = 10
+    words_list = File.read('5desk.txt').split(' ')
+    words_correct_size = words_list.filter_map { |word| word if word.size.between?(5, 12) }
+    @random_word = words_correct_size.sample.downcase
+    @display = Array.new(random_word.size, '_')
+  end
 
-display = Array.new(random_word.size, '_')
-p random_word
-puts "Enter #{"\"save\"".green} to save the game, enter #{"\"load\"".yellow} to load your save file"
-puts ''
+
+end
+
+game = Game.new
+
 puts display.join(' ')
-puts ''
-print 'Enter a letter to make a guess> '
-input = gets.chomp.downcase
 
-random_word_split = random_word.split('')
+while display.include?('_')
+  puts "Enter #{'"save"'.green} to save the game, enter #{'"load"'.yellow} to load your save file"
+  puts ''
+  puts display.join(' ')
+  puts ''
+  print 'Enter a letter to make a guess> '
+  input = gets.chomp.downcase
 
-random_word_split.each_with_index do |letter, index|
-  display.each_with_index do |placeholder, display_index|
-    if letter == input
-      display[index] = input
+  random_word_split = random_word.split('')
+
+  random_word_split.each_with_index do |letter, index|
+    display.each_with_index do |_placeholder, _display_index|
+      display[index] = input if letter.downcase == input
     end
   end
 end
-
 puts display.join(' ')
-
+puts "Congrats! You guessed #{random_word}"
